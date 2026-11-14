@@ -1,5 +1,5 @@
-// Crear el mapa centrado en el departamento de La Guajira
-const map = L.map('map').setView([11.35, -72.5], 8);
+// Crear el mapa centrado en el departamento de La Cundinamarca
+const map = L.map('map').setView([4.35, -74.5], 8);
 
 // Agregar capa base de OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -10,12 +10,12 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // URL del servicio WMS de GeoServer
 const geoserverUrl = 'https://geoportal.dane.gov.co/mparcgis/services/MGN2024/Serv_CapasMGN_2024/MapServer/WMSServer';
 
-// Código DANE del departamento a mostrar: La Guajira
-const GUAJIRA_CCDGO = '44';
+// Código DANE del departamento a mostrar: La Cundinamarca
+const CUNDINAMARCA_CCDGO = '25';
 
 // Agregar capa WMS de departamentos
 // Nota: el servicio es un ArcGIS MapServer WMS y no admite filtros por atributo (CQL),
-// por lo que se restringe la carga de teselas a la extensión de La Guajira mediante 'bounds'.
+// por lo que se restringe la carga de teselas a la extensión de La Cundinamarca mediante 'bounds'.
 const departamentosWMS = L.tileLayer.wms(geoserverUrl, {
     layers: '8',
     format: 'image/png',
@@ -31,9 +31,9 @@ let departamentosGeoJSON; // Variable para almacenar la capa GeoJSON
 fetch(departamentosWFSUrl)
     .then(response => response.json())
     .then(data => {
-        // Crear capa GeoJSON (solo La Guajira)
+        // Crear capa GeoJSON (solo La Cundinamarca)
         departamentosGeoJSON = L.geoJSON(data, {
-            filter: feature => feature.properties.dpto_ccdgo === GUAJIRA_CCDGO,
+            filter: feature => feature.properties.dpto_ccdgo === CUNDINAMARCA_CCDGO,
             style: {
                 color: '#232323',
                 weight: 2,
@@ -47,16 +47,16 @@ fetch(departamentosWFSUrl)
         departamentosGeoJSON.addTo(map);
         controlLayer.addOverlay(departamentosGeoJSON, "Departamentos (WFS)"); // Agregar al control de capas
 
-        // Extensión de La Guajira
-        const guajiraBounds = departamentosGeoJSON.getBounds();
+        // Extensión de La Cundinamarca
+        const cundinamarcaBounds = departamentosGeoJSON.getBounds();
 
-        // Restringir las teselas de ambos WMS a la extensión de La Guajira
-        departamentosWMS.options.bounds = guajiraBounds;
+        // Restringir las teselas de ambos WMS a la extensión de La Cundinamarca
+        departamentosWMS.options.bounds = cundinamarcaBounds;
         departamentosWMS.redraw();
-        municipiosWMS.options.bounds = guajiraBounds;
+        municipiosWMS.options.bounds = cundinamarcaBounds;
 
-        // Centrar la vista en el departamento de La Guajira
-        map.fitBounds(guajiraBounds);
+        // Centrar la vista en el departamento de La Cundinamarca
+        map.fitBounds(cundinamarcaBounds);
     })
     .catch(error => console.error('Error cargando WFS:', error));
 
@@ -93,15 +93,15 @@ const controlLayer = L.control.layers(baseMaps, overlayMaps, {
 baseMaps["OpenStreetMap"].addTo(map);
 
 // ============================================================
-// Capas detalladas de La Guajira (cartografía base IGAC/DANE)
-// Datos recortados por departamento en datos/44_LA_GUAJIRA/.
+// Capas detalladas de La Cundinamarca (cartografía base IGAC/DANE)
+// Datos recortados por departamento en datos/44_LA_CUNDINAMARCA/.
 // Se cargan de forma diferida (lazy): solo se descarga el GeoJSON
 // cuando el usuario activa la capa en el control, porque algunas
 // (Drenaje, Curvas de Nivel, Vías) pesan varios MB.
 // ============================================================
-const guajiraDataDir = 'https://epiragauta.github.io/geoservicios_y_websites/webapp/datos/44_LA_GUAJIRA/';
+const cundinamarcaDataDir = 'https://epiragauta.github.io/geoservicios_y_websites/webapp/datos/25_CUNDINAMARCA/';
 
-const capasGuajira = [
+const capasCundinamarca = [
     {
         file: 'Administrativo_P.geojson', label: 'Topónimos administrativos',
         tipo: 'punto', color: '#c62828', radio: 4
@@ -137,7 +137,7 @@ const capasGuajira = [
 ];
 
 // Construye el contenido del popup a partir de los atributos más relevantes
-function popupGuajira(props) {
+function popupCundinamarca(props) {
     const campos = [
         ['NOMBRE_GEO', 'Nombre'],
         ['TIPO_VIA', 'Tipo de vía'],
@@ -155,8 +155,8 @@ function popupGuajira(props) {
 }
 
 // Carga (una sola vez) el GeoJSON de una capa dentro de su layerGroup
-function cargarCapaGuajira(cfg) {
-    fetch(guajiraDataDir + cfg.file)
+function cargarCapaCundinamarca(cfg) {
+    fetch(cundinamarcaDataDir + cfg.file)
         .then(response => response.json())
         .then(data => {
             const capa = L.geoJSON(data, {
@@ -170,7 +170,7 @@ function cargarCapaGuajira(cfg) {
                 }),
                 onEachFeature: (feature, layer) => {
                     if (feature.properties) {
-                        layer.bindPopup(popupGuajira(feature.properties));
+                        layer.bindPopup(popupCundinamarca(feature.properties));
                     }
                 }
             });
@@ -180,7 +180,7 @@ function cargarCapaGuajira(cfg) {
 }
 
 // Registrar cada capa como overlay con carga diferida
-capasGuajira.forEach(cfg => {
+capasCundinamarca.forEach(cfg => {
     cfg._group = L.layerGroup();
     cfg._loaded = false;
     controlLayer.addOverlay(cfg._group, cfg.label);
@@ -188,10 +188,10 @@ capasGuajira.forEach(cfg => {
 
 // Al activar una capa por primera vez, descargar su GeoJSON
 map.on('overlayadd', function (e) {
-    const cfg = capasGuajira.find(c => c._group === e.layer);
+    const cfg = capasCundinamarca.find(c => c._group === e.layer);
     if (cfg && !cfg._loaded) {
         cfg._loaded = true;
-        cargarCapaGuajira(cfg);
+        cargarCapaCundinamarca(cfg);
     }
 });
 
@@ -253,7 +253,7 @@ const info = L.control({position: 'topleft'});
 info.onAdd = function (map) {
     this._div = L.DomUtil.create('div', 'info');
     this._div.innerHTML = `
-        <h4>La Guajira - Servicios Geográficos</h4>
+        <h4>La Cundinamarca - Servicios Geográficos</h4>
         <p>Visualización del departamento y sus municipios</p>
         <p><small>Datos: DANE | Servidor: GeoServer</small></p>
     `;
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Marcador de Riohacha (capital de La Guajira)
-const riohachaMarker = L.marker([11.5444, -72.9072])
+// Marcador de Bogota (capital de La Cundinamarca)
+const bogotaMarker = L.marker([4.5444, -74.9072])
     .addTo(map)
-    .bindPopup('<b>Riohacha</b><br>Capital de La Guajira');
+    .bindPopup('<b>Bogota</b><br>Capital de La Cundinamarca');
